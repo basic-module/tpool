@@ -8,15 +8,18 @@ on:
 
 env:
   BUILD_TYPE: Release
-
+  CPUNUM: $(cat /proc/cpuinfo | grep processor|wc -l)
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: build
+      - name: prepare
         run:
           cpu=$(cat /proc/cpuinfo | grep processor|wc -l) &&
           echo "processor num is ${cpu}"  &&
-          cmake -B target && cd target && make -j${cpu}
+          cmake -B target -Dtest=ON
+      - name: test
+        working-directory: target
+        run: make -j${cpu} && make test

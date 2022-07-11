@@ -31,6 +31,7 @@ Tpool::~Tpool()
 void Tpool::Stop()
 {
 	isExit = true;
+	cond.notify_all();
 	std::unique_lock lock(threadsMutex);
 	for (auto &t : threadPool) {
 		if (t.joinable()) t.join();	
@@ -50,7 +51,7 @@ void Tpool::AddThread(int num)
 					std::packaged_task<std::any()> task;
 					{
 						std::unique_lock<mutex> lock(tasksMutex);
-						if (tasks.empty()) {
+						while (tasks.empty()) {
 							if (isExit) {
 								return;
 							}
