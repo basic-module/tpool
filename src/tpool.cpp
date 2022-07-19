@@ -48,7 +48,7 @@ void Tpool::AddThread(int num)
 		}
 		threadPool.emplace_back([this]{
 				while (!isExit){
-					std::packaged_task<std::any()> task;
+					std::function<void()> task;
 					{
 						std::unique_lock<mutex> lock(tasksMutex);
 						while (tasks.empty()) {
@@ -66,7 +66,7 @@ void Tpool::AddThread(int num)
 	}
 }
 
-void Tpool::AddTask(std::packaged_task<std::any()> &task)
+void Tpool::AddTask(const std::function<void()> &task)
 {
 	std::unique_lock<mutex> lock(tasksMutex);
 	tasks.emplace(move(task));

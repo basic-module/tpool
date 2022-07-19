@@ -17,7 +17,7 @@ namespace TPOOL {
 class TPOOL_EXPORT Tpool {
 public:
 	static Tpool* Instance();
-	void AddTask(std::packaged_task<std::any()> &task);
+	void AddTask(const std::function<void()> &task);
 	void Stop();	
 	void Config(unsigned int minThreadNum, unsigned int maxThreadNum)
 	{
@@ -31,7 +31,7 @@ protected:
 private:
 	Tpool();
 	~Tpool();
-	std::queue<std::packaged_task<std::any()>> tasks;
+	std::queue<std::function<void()>> tasks;
 	std::vector<std::thread> threadPool;
 	std::mutex tasksMutex;
 	std::mutex threadsMutex;
@@ -41,13 +41,14 @@ private:
 	std::atomic<unsigned int> threadsMinNum{1};
 };
 
-template<typename T, typename ... Args>
-std::future<std::any> AsyncTask(std::function<T(Args ...)> func, Args&& ...args)
+template<typename Func, typename ...Types>
+auto AsyncTask(Func &&func, Types&& ...args)
 {
-	auto task = std::packaged_task<std::any()>(std::bind(func, std::forward<Args> (args)...));
-	auto result = task.get_future();
-	Tpool::Instance()->AddTask(task);
-	return result;
+	using RetType = decltype(func(args...));
+	auto task = std::make_shared<std::packaged_task<RetType()>>(std::bind(std::forward<Func>(func), std::forward<Types> (args)...));
+	auto result = task->get_future();
+	Tpool::Instance()->AddTask([task]{(*task)();});
+	return move(result);
 }
 
 }

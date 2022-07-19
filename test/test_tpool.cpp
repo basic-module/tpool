@@ -9,10 +9,13 @@ using namespace TPOOL;
 
 TEST(Tpool, runTask)
 {
-	std::function<void(const string &, const string &)> f = [](const string &a, const string &b) {printf(a.c_str(), b.c_str());};
-	auto task = packaged_task<std::any()>(std::bind(printf, "%d", 5));
-	auto result = task.get_future();
-	Tpool::Instance()->AddTask(task);
-	cout << (result.get().type() == typeid(int));
-}
+	auto maxnum = [](int a, int b) {return ((a < b)? b : a);};
+	auto test1 = AsyncTask(maxnum, 1, 2);
+	auto test2 = AsyncTask(printf, "this is a task %d", 2);
 
+
+	EXPECT_EQ(test1.get(), 2);
+	EXPECT_EQ(test2.get(), string("this is a task 2").size());
+
+	Tpool::Instance()->Stop();
+}
